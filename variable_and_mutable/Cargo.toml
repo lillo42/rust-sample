@@ -1,0 +1,6 @@
+[package]
+name = "variable_and_mutable"
+version = "0.1.0"
+authors = ["rlillo"]
+
+[dependencies]
