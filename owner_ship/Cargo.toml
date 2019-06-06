@@ -1,6 +1,0 @@
-[package]
-name = "OwnerShip"
-version = "0.1.0"
-authors = ["rlillo"]
-
-[dependencies]
