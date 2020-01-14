@@ -1,0 +1,13 @@
+version: "3"
+volumes:
+  postgres-store:
+services:
+  postgres:
+    image: postgres:alpine
+    container_name: postgres-rust-todo-api
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: "Rust123"
+    volumes:
+      - "postgres-store:/var/lib/postgresql/data"
