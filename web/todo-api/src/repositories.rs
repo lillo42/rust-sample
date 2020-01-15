@@ -1,11 +1,11 @@
 use crate::entities::Todo;
-use postgres::{Client, NoTls};
-use actix_web::web::Data;
+extern crate postgres;
+use postgres::{Connection, TlsMode};
 
 pub trait Repository {
     fn get_all(&self) -> Vec<Todo>;
 
-    fn insert(&self, todo: &Todo);
+    fn insert(&self, todo: &mut Todo);
 
     fn update(&self, todo: &Todo);
 
@@ -22,18 +22,26 @@ impl PostgresRepository {
             connection: String::from("postgres://postgres:Rust123@localhost/todo")
         }
     }
+
+    fn create_connection(&self) -> Connection {
+        let connection = Connection::connect(self.connection.as_ref(), TlsMode::None);
+        let connection = match connection {
+            Ok(client) => {
+                println!("Connection open with succes");
+                client
+            },
+            Err(e) => {
+                panic!("Error to create connection string [Error: {}]", e);
+            }
+        };
+
+        connection
+    }
 }
 
 impl Repository for PostgresRepository {
      fn get_all(&self) -> Vec<Todo> {
-        let conn = Client::connect(self.connection.as_ref(),  NoTls);
-        let mut conn =  match conn {
-            Ok(c) => c,
-            Err(e) => {
-                println!("Error to create connection string [Error: {}]", e);
-                return vec![];
-            }
-        };
+        let conn = self.create_connection();
 
         let mut result = vec![];
 
@@ -46,7 +54,7 @@ impl Repository for PostgresRepository {
             }
         };
 
-        for row in rows {
+        for row in rows.iter() {
             result.push(Todo {
                 id: row.get(0),
                 text: row.get(1),
@@ -57,32 +65,19 @@ impl Repository for PostgresRepository {
         result
     }
 
-    fn insert(&self, todo: &Todo) {
-        let conn = Client::connect(self.connection.as_ref(),  NoTls);
-        let mut conn =  match conn {
-            Ok(c) => c,
-            Err(e) => {
-                println!("Error to create connection string [Error: {}]", e);
-                return;
-            }
-        };
-
-        match conn.execute("INSERT INTO Todo (id, text, is_done) VALUES ($1, $2, $3)",
-                        &[&todo.id, &todo.text, &todo.is_done]) {
+    fn insert(&self, todo: &mut Todo) {
+        let conn =  self.create_connection();
+        match conn.query("INSERT INTO Todo (text, is_done) VALUES ($1, $2) RETURNING id;",
+                        &[&todo.text, &todo.is_done]) {
             Err(e) => println!("Error to insert {}", e),
-            Ok(_) => {}
+            Ok(id) => {
+                todo.id = id.get(0).get(0);
+            }
         };
     }
 
     fn update(&self, todo: &Todo) {
-        let conn = Client::connect(self.connection.as_ref(),  NoTls);
-        let mut conn =  match conn {
-            Ok(c) => c,
-            Err(e) => {
-                println!("Error to create connection string [Error: {}]", e);
-                return;
-            }
-        };
+        let conn = self.create_connection();
 
         match conn.execute("UPDATE Todo SET text=$1, is_done=$2 WHERE id=$3",
                            &[&todo.text, &todo.is_done, &todo.id]) {
@@ -92,56 +87,11 @@ impl Repository for PostgresRepository {
     }
 
     fn delete(&self, todo: &Todo) {
-        let conn = Client::connect(self.connection.as_ref(),  NoTls);
-        let mut conn =  match conn {
-            Ok(c) => c,
-            Err(e) => {
-                println!("Error to create connection string [Error: {}]", e);
-                return;
-            }
-        };
-
+        let conn =  self.create_connection();
         match conn.execute("DELETE FROM Todo WHERE id=$1",
                            &[&todo.id]) {
             Err(e) => println!("Error to insert {}", e),
             Ok(_) => {}
         };
-    }
-}
-
-
-static mut DATA: Vec<Todo> = vec![];
-pub struct InMemoryRepository {
-
-}
-
-impl Repository for InMemoryRepository {
-    fn get_all(&self) -> Vec<Todo> {
-        let mut result = vec![];
-        unsafe {
-            DATA.clone_into(&result);
-        }
-        result
-    }
-
-    fn insert(&self, todo: &Todo) {
-        unsafe {
-            DATA.push(todo.clone());
-        }
-    }
-
-    fn update(&self, todo: &Todo) {
-        unsafe {
-            let update = DATA.iter().find(|x| x.id.eq(&todo.id));
-            match update {
-                Some(e) => {},
-                None() => {}
-
-            }
-        }
-    }
-
-    fn delete(&self, todo: &Todo) {
-        unimplemented!()
     }
 }

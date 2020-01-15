@@ -11,6 +11,7 @@ async fn main() -> std::io::Result<()> {
     let bind =HttpServer::new(|| {
         App::new()
             .service(todo_api::get_all)
+            .service(todo_api::add)
     })
         .bind("127.0.0.1:5000");
 

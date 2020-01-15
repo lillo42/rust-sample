@@ -1,4 +1,4 @@
-use serde::{Serialize};
+use serde::{Serialize, Deserialize};
 
 #[derive(Serialize)]
 pub struct Todo {
@@ -7,12 +7,13 @@ pub struct Todo {
     pub is_done: bool
 }
 
-impl Todo {
-    pub fn clone(&self) -> Todo {
-        Todo {
-            id: self.id,
-            text: self.text.clone(),
-            is_done: self.is_done
-        }
-    }
+#[derive(Deserialize)]
+pub struct CreateTodoRequest {
+    pub text: String
+}
+
+#[derive(Deserialize)]
+pub struct UpdateTodoRequest {
+    pub text: String,
+    pub is_done: bool
 }
