@@ -1,5 +1,4 @@
 use crate::entities::Todo;
-extern crate postgres;
 use postgres::{Connection, TlsMode};
 
 pub trait Repository {
@@ -45,7 +44,7 @@ impl Repository for PostgresRepository {
 
         let mut result = vec![];
 
-        let rows = conn.query("SELECT * FROM Todo", &[]);
+        let rows = conn.query("SELECT id, text, is_done FROM Todo ORDER BY id", &[]);
         let rows = match rows {
             Ok(r) => r,
             Err(e)  => {

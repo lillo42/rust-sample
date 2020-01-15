@@ -12,6 +12,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(todo_api::get_all)
             .service(todo_api::add)
+            .service(todo_api::update)
+            .service(todo_api::delete)
     })
         .bind("127.0.0.1:5000");
 
